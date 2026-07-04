@@ -1,0 +1,423 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Directory | FeeFlow ERP{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">Students Directory</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage enrollments, course selections, monthly fee parameters, and student records.</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <!-- Import Button -->
+            <button onclick="toggleImportModal()" class="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-2xl transition flex items-center space-x-2">
+                <i class="fa-solid fa-file-import"></i>
+                <span>Import Excel</span>
+            </button>
+            <!-- Add Student Button -->
+            <button onclick="toggleStudentModal()" class="bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 px-5 rounded-2xl transition shadow-lg shadow-primary-500/10 flex items-center space-x-2">
+                <i class="fa-solid fa-plus"></i>
+                <span>Add Student</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters Panel -->
+    <div class="bg-white dark:bg-darkCard p-6 rounded-3xl border border-gray-150 dark:border-gray-800/80 shadow-sm">
+        <form method="GET" action="" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- Search field -->
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input type="text" name="search" value="{{ filters.search }}" placeholder="Search by ID, name, parent..." class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full pl-9 p-2.5 transition-all">
+            </div>
+
+            <!-- Course Filter -->
+            <select name="course_id" class="bg-gray-50 dark:bg-gray-805 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                <option value="">All Courses</option>
+                {% for course in all_courses %}
+                    <option value="{{ course.id }}" {% if filters.course_id == course.id|stringformat:"i" %}selected{% endif %}>{{ course.name }}</option>
+                {% endfor %}
+            </select>
+
+            <!-- Trainer Filter -->
+            <select name="trainer_id" class="bg-gray-50 dark:bg-gray-805 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                <option value="">All Trainers</option>
+                {% for trainer in all_trainers %}
+                    <option value="{{ trainer.id }}" {% if filters.trainer_id == trainer.id|stringformat:"i" %}selected{% endif %}>{{ trainer.name }}</option>
+                {% endfor %}
+            </select>
+
+            <!-- Buttons -->
+            <div class="flex space-x-2">
+                <button type="submit" class="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-sm transition">
+                    Apply Filters
+                </button>
+                <a href="{% url 'students' %}" class="py-2.5 px-3 bg-gray-105 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-xl text-sm transition flex items-center justify-center">
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Student Table Card -->
+    <div class="bg-white dark:bg-darkCard rounded-3xl border border-gray-150 dark:border-gray-800/80 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-500 dark:text-gray-455">
+                <thead class="bg-gray-50/70 dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-300 uppercase">
+                    <tr>
+                        <th class="px-6 py-4 rounded-l-xl">Student Details</th>
+                        <th class="px-6 py-4">Academy / Course</th>
+                        <th class="px-6 py-4">Contact</th>
+                        <th class="px-6 py-4">Monthly Fee</th>
+                        <th class="px-6 py-4">Due Date</th>
+                        <th class="px-6 py-4">Status</th>
+                        <th class="px-6 py-4 rounded-r-xl text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-850">
+                    {% for student in students %}
+                    <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center space-x-3">
+                                {% if student.photo %}
+                                    <img src="{{ student.photo.url }}" alt="{{ student.name }}" class="w-10 h-10 rounded-full object-cover">
+                                {% else %}
+                                    <div class="w-10 h-10 rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 flex items-center justify-center font-bold text-sm">
+                                        {{ student.name|slice:":2"|upper }}
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <h4 class="font-bold text-gray-900 dark:text-white">{{ student.name }}</h4>
+                                    <span class="text-xs text-gray-400 font-semibold">{{ student.student_id }} | Adm: {{ student.admission_no }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-semibold text-gray-805 dark:text-gray-250">{{ student.course.name }}</div>
+                            <div class="text-xs text-gray-400 font-medium">{{ student.academy.name }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm">{{ student.mobile }}</div>
+                            <div class="text-xs text-gray-400">{{ student.email }}</div>
+                        </td>
+                        <td class="px-6 py-4 font-bold text-gray-805 dark:text-white">
+                            ₹{{ student.monthly_fee }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-xs font-semibold px-2 py-1 rounded-md border
+                                {% if student.last_due_date <= today %}
+                                    bg-red-50 text-red-805 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/50
+                                {% elif student.last_due_date <= next_week %}
+                                    bg-amber-50 text-amber-805 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50
+                                {% else %}
+                                    bg-emerald-50 text-emerald-805 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/50
+                                {% endif %}">
+                                {{ student.last_due_date|date:"d-m-Y" }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if student.status == 'Active' %}bg-emerald-50 text-emerald-805 dark:bg-emerald-950/20 dark:text-emerald-450{% else %}bg-gray-100 text-gray-800 dark:bg-gray-850 dark:text-gray-450{% endif %}">
+                                {{ student.status }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex justify-end space-x-2">
+                                <button onclick="editStudent('{{ student.id }}')" class="p-2 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/30 rounded-xl transition" title="Edit Profile">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <a href="{% url 'payment_desk' %}?student_id={{ student.id }}" class="py-1 px-3 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 font-bold rounded-lg text-xs transition">
+                                    Pay Fee
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-gray-400">No students matching the criteria found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Student Registration / Edit Modal -->
+    <div id="student-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-darkCard w-full max-w-3xl rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden transform transition-all">
+            <!-- Modal Header -->
+            <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/20">
+                <h3 id="student-modal-title" class="text-xl font-extrabold text-gray-900 dark:text-white">Register Student</h3>
+                <button onclick="toggleStudentModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Form -->
+            <form id="student-form" method="POST" action="" enctype="multipart/form-data" class="p-6 space-y-6">
+                {% csrf_token %}
+                <input type="hidden" name="student_db_id" id="student_db_id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Admission Number -->
+                    <div>
+                        <label for="admission_no" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Admission No*</label>
+                        <input type="text" id="admission_no" name="admission_no" required class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                    </div>
+                    <!-- Name -->
+                    <div class="md:col-span-2">
+                        <label for="name" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Student Name*</label>
+                        <input type="text" id="name" name="name" required class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                    </div>
+
+                    <!-- Gender -->
+                    <div>
+                        <label for="gender" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Gender*</label>
+                        <select id="gender" name="gender" required class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <!-- DOB -->
+                    <div>
+                        <label for="dob" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Date of Birth*</label>
+                        <input type="text" id="dob" name="dob" required class="datepicker bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                    </div>
+                    <!-- Parent Name -->
+                    <div>
+                        <label for="parent_name" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Parent/Guardian Name*</label>
+                        <input type="text" id="parent_name" name="parent_name" required class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                    </div>
+
+                    <!-- Mobile -->
+                    <div>
+                        <label for="mobile" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Mobile Number*</label>
+                        <input type="text" id="mobile" name="mobile" required class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                    </div>
+                    <!-- Alt Mobile -->
+                    <div>
+                        <label for="alt_mobile" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Alternate Mobile</label>
+                        <input type="text" id="alt_mobile" name="alt_mobile" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                    </div>
+                    <!-- Email -->
+                    <div>
+                        <label for="email" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Email Address*</label>
+                        <input type="email" id="email" name="email" required class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                    </div>
+
+                    <!-- Address -->
+                    <div class="md:col-span-3">
+                        <label for="address" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Home Address*</label>
+                        <textarea id="address" name="address" required rows="2" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5"></textarea>
+                    </div>
+
+                    <!-- Academy Selector -->
+                    <div>
+                        <label for="academy" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Academy*</label>
+                        <select id="academy" name="academy" required onchange="handleAcademyChange(this.value)" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                            <option value="">-- Select Academy --</option>
+                            {% for acad in academies_list %}
+                                <option value="{{ acad.id }}">{{ acad.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <!-- Course Selector -->
+                    <div>
+                        <label for="course" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Course*</label>
+                        <select id="course" name="course" required onchange="handleCourseChange(this.value)" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                            <option value="">-- Select Course --</option>
+                        </select>
+                    </div>
+                    <!-- Batch Selector -->
+                    <div>
+                        <label for="batch" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Batch & Trainer*</label>
+                        <select id="batch" name="batch" required class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                            <option value="">-- Select Batch --</option>
+                        </select>
+                    </div>
+
+                    <!-- Monthly Fee -->
+                    <div>
+                        <label for="monthly_fee" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Monthly Fee (₹)*</label>
+                        <input type="number" step="0.01" id="monthly_fee" name="monthly_fee" required class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                    </div>
+                    <!-- Registration Fee -->
+                    <div>
+                        <label for="registration_fee" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Registration Fee (₹)</label>
+                        <input type="number" step="0.01" id="registration_fee" name="registration_fee" value="0.00" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                    </div>
+                    <!-- Discount -->
+                    <div>
+                        <label for="discount" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Fee Concession / Disc (₹)</label>
+                        <input type="number" step="0.01" id="discount" name="discount" value="0.00" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                    </div>
+
+                    <!-- Joining Date -->
+                    <div>
+                        <label for="joining_date" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Joining Date*</label>
+                        <input type="text" id="joining_date" name="joining_date" required class="datepicker bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                    </div>
+                    <!-- Status -->
+                    <div>
+                        <label for="status" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Status</label>
+                        <select id="status" name="status" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <!-- Photo -->
+                    <div>
+                        <label for="photo" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Photo</label>
+                        <input type="file" id="photo" name="photo" accept="image/*" class="text-xs text-gray-500 dark:text-gray-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary-55 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Footer buttons -->
+                <div class="flex justify-end space-x-3 border-t border-gray-100 dark:border-gray-800 pt-4">
+                    <button type="button" onclick="toggleStudentModal()" class="py-2.5 px-5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-750 dark:text-gray-300 font-semibold rounded-2xl transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="py-2.5 px-6 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-2xl transition shadow-lg shadow-primary-500/10">
+                        Register Student
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Excel Import Modal -->
+    <div id="import-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-darkCard w-full max-w-md rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden transform transition-all">
+            <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/20">
+                <h3 class="text-xl font-extrabold text-gray-900 dark:text-white">Import Students (Excel)</h3>
+                <button onclick="toggleImportModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <form method="POST" action="{% url 'import_students' %}" enctype="multipart/form-data" class="p-6 space-y-6">
+                {% csrf_token %}
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Choose Excel File (.xlsx)</label>
+                    <input type="file" name="excel_file" required accept=".xlsx" class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-primary-55 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer">
+                </div>
+                <div class="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800 text-xs text-gray-500 space-y-1">
+                    <p class="font-bold">Required Columns in Excel File:</p>
+                    <p>Admission No, Student Name, Gender (Male/Female), DOB (YYYY-MM-DD), Parent Name, Mobile, Email, Address, Joining Date (YYYY-MM-DD), Monthly Fee, Academy Code, Course Name, Batch Name</p>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="toggleImportModal()" class="py-2 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-750 rounded-xl transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="py-2 px-5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl transition">
+                        Import
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize datepickers
+    flatpickr(".datepicker", {
+        dateFormat: "d-m-Y",
+        allowInput: true
+    });
+
+    function toggleStudentModal() {
+        const modal = document.getElementById('student-modal');
+        modal.classList.toggle('hidden');
+        if (modal.classList.contains('hidden')) {
+            document.getElementById('student-form').reset();
+            document.getElementById('student_db_id').value = '';
+            document.getElementById('student-modal-title').innerText = 'Register Student';
+            document.getElementById('course').innerHTML = '<option value="">-- Select Course --</option>';
+            document.getElementById('batch').innerHTML = '<option value="">-- Select Batch --</option>';
+        }
+    }
+
+    function toggleImportModal() {
+        document.getElementById('import-modal').classList.toggle('hidden');
+    }
+
+    // Dynamic selects loading (Academy -> Course -> Batch)
+    let coursesData = {};
+    let batchesData = {};
+
+    // We can load metadata from server
+    fetch('/api/settings/metadata/')
+        .then(response => response.json())
+        .then(data => {
+            coursesData = data.courses;  // { academy_id: [ {id, name} ] }
+            batchesData = data.batches;  // { course_id: [ {id, name, trainer} ] }
+        });
+
+    function handleAcademyChange(academyId) {
+        const courseSelect = document.getElementById('course');
+        const batchSelect = document.getElementById('batch');
+        
+        courseSelect.innerHTML = '<option value="">-- Select Course --</option>';
+        batchSelect.innerHTML = '<option value="">-- Select Batch --</option>';
+
+        if (academyId && coursesData[academyId]) {
+            coursesData[academyId].forEach(course => {
+                courseSelect.innerHTML += `<option value="${course.id}">${course.name}</option>`;
+            });
+        }
+    }
+
+    function handleCourseChange(courseId) {
+        const batchSelect = document.getElementById('batch');
+        batchSelect.innerHTML = '<option value="">-- Select Batch --</option>';
+
+        if (courseId && batchesData[courseId]) {
+            batchesData[courseId].forEach(batch => {
+                batchSelect.innerHTML += `<option value="${batch.id}">${batch.name} (${batch.trainer})</option>`;
+            });
+        }
+    }
+
+    function editStudent(id) {
+        // Fetch student details from API
+        fetch(`/api/students/${id}/details/`)
+            .then(res => res.json())
+            .then(data => {
+                const s = data.student;
+                document.getElementById('student_db_id').value = s.id;
+                document.getElementById('admission_no').value = s.admission_no;
+                document.getElementById('name').value = s.name;
+                document.getElementById('gender').value = s.gender;
+                document.getElementById('dob').value = s.dob;
+                document.getElementById('parent_name').value = s.parent_name;
+                document.getElementById('mobile').value = s.mobile;
+                document.getElementById('alt_mobile').value = s.alt_mobile || '';
+                document.getElementById('email').value = s.email;
+                document.getElementById('address').value = s.address;
+                
+                document.getElementById('academy').value = s.academy_id;
+                handleAcademyChange(s.academy_id);
+                
+                document.getElementById('course').value = s.course_id;
+                handleCourseChange(s.course_id);
+                
+                document.getElementById('batch').value = s.batch_id;
+                
+                document.getElementById('monthly_fee').value = s.monthly_fee;
+                document.getElementById('registration_fee').value = s.registration_fee;
+                document.getElementById('discount').value = s.discount;
+                document.getElementById('joining_date').value = s.joining_date;
+                document.getElementById('status').value = s.status;
+
+                document.getElementById('student-modal-title').innerText = 'Edit Student Profile';
+                document.getElementById('student-modal').classList.remove('hidden');
+            });
+    }
+</script>
+{% endblock %}

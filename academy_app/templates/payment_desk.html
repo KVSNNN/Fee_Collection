@@ -1,0 +1,514 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Desk | FeeFlow ERP{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)]">
+    
+    <!-- Left Panel: Search & Select (3 Cols) -->
+    <div class="lg:col-span-4 bg-white dark:bg-darkCard p-6 rounded-3xl border border-gray-150 dark:border-gray-800/80 shadow-sm flex flex-col h-full overflow-hidden">
+        <h3 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4">Search Student</h3>
+        
+        <!-- Academy Select -->
+        <div class="mb-4">
+            <label for="payment-academy" class="block text-xs font-semibold text-gray-450 uppercase tracking-wider mb-2">Select Academy</label>
+            <select id="payment-academy" class="bg-gray-50 dark:bg-gray-805 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-3 font-semibold">
+                <option value="">-- Choose Academy --</option>
+                {% for acad in academies_list %}
+                    <option value="{{ acad.id }}" {% if acad.id == active_academy_id %}selected{% endif %}>{{ acad.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Autocomplete Search Bar -->
+        <div class="relative mb-4">
+            <label for="student-search-input" class="block text-xs font-semibold text-gray-455 uppercase tracking-wider mb-2">Smart Search (3 Letters)</label>
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                    <i class="fa-solid fa-magnifying-glass text-lg"></i>
+                </span>
+                <input type="text" id="student-search-input" autocomplete="off" placeholder="Type student name (e.g. HAR)..." class="bg-gray-50 dark:bg-gray-805 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-3.5 transition-all">
+            </div>
+            <!-- Floating Autocomplete dropdown -->
+            <div id="autocomplete-dropdown" class="hidden absolute left-0 right-0 mt-2 bg-white dark:bg-darkCard border border-gray-250 dark:border-gray-800 rounded-2xl shadow-2xl z-50 max-h-60 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
+                <!-- Items populated by JS -->
+            </div>
+        </div>
+
+        <!-- Active Student Info Preview (if loaded) -->
+        <div id="student-preview-card" class="hidden mt-4 p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800 flex-1 flex flex-col justify-between overflow-y-auto">
+            <div class="space-y-4">
+                <div class="flex items-center space-x-3">
+                    <div id="prev-photo-container" class="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-955/30 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold text-lg">
+                        H
+                    </div>
+                    <div>
+                        <h4 id="prev-name" class="font-extrabold text-gray-900 dark:text-white text-base">Student Name</h4>
+                        <span id="prev-id" class="text-xs text-gray-400 font-semibold">STU00001</span>
+                    </div>
+                </div>
+                <div class="space-y-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-105 dark:border-gray-800 pt-3">
+                    <p class="flex justify-between"><span>Course:</span> <strong id="prev-course" class="text-gray-700 dark:text-gray-300">-</strong></p>
+                    <p class="flex justify-between"><span>Batch:</span> <strong id="prev-batch" class="text-gray-700 dark:text-gray-300">-</strong></p>
+                    <p class="flex justify-between"><span>Trainer:</span> <strong id="prev-trainer" class="text-gray-700 dark:text-gray-300">-</strong></p>
+                    <p class="flex justify-between"><span>Monthly Fee:</span> <strong id="prev-fee" class="text-gray-700 dark:text-gray-300">-</strong></p>
+                    <p class="flex justify-between"><span>Last Due Date:</span> <strong id="prev-due-date" class="text-gray-700 dark:text-gray-300">-</strong></p>
+                </div>
+            </div>
+            
+            <div class="mt-4 border-t border-gray-105 dark:border-gray-800 pt-3 text-center">
+                <span id="prev-due-status" class="inline-block px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-gray-400">
+                    No status
+                </span>
+            </div>
+        </div>
+
+        <div id="student-preview-placeholder" class="mt-4 p-8 text-center text-gray-400 bg-gray-50 dark:bg-gray-808/20 rounded-2xl border border-dashed border-gray-200 dark:border-gray-808 flex-1 flex flex-col justify-center items-center">
+            <i class="fa-solid fa-user-check text-4xl mb-2 text-gray-300 dark:text-gray-700"></i>
+            <p class="text-sm font-medium">Select an academy and search a student to display profile information.</p>
+        </div>
+    </div>
+
+    <!-- Right Panel: Entry & History (8 Cols) -->
+    <div class="lg:col-span-8 bg-white dark:bg-darkCard p-6 rounded-3xl border border-gray-150 dark:border-gray-808/80 shadow-sm flex flex-col h-full overflow-hidden">
+        
+        <!-- Active Payment form and history layout -->
+        <div id="payment-workspace" class="hidden flex-1 flex flex-col min-h-0 overflow-y-auto space-y-6">
+            
+            <!-- Quick Alert / Dues Summary Card -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="p-4 bg-emerald-50 dark:bg-emerald-955/20 border border-emerald-100 dark:border-emerald-900/40 rounded-2xl text-center">
+                    <span class="text-xs text-gray-400 uppercase font-semibold">Monthly Rate</span>
+                    <h5 id="sum-monthly-rate" class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-1">₹0.00</h5>
+                </div>
+                <div class="p-4 bg-red-50 dark:bg-red-955/20 border border-red-100 dark:border-red-900/40 rounded-2xl text-center">
+                    <span class="text-xs text-gray-400 uppercase font-semibold">Outstanding Dues</span>
+                    <h5 id="sum-outstanding" class="text-lg font-bold text-red-600 dark:text-red-400 mt-1">₹0.00</h5>
+                </div>
+                <div class="p-4 bg-blue-50 dark:bg-blue-955/20 border border-blue-100 dark:border-blue-900/40 rounded-2xl text-center">
+                    <span class="text-xs text-gray-400 uppercase font-semibold">Last Paid Date</span>
+                    <h5 id="sum-last-due" class="text-lg font-bold text-blue-600 dark:text-blue-400 mt-1">-</h5>
+                </div>
+            </div>
+
+            <!-- New Entry Fields -->
+            <form id="payment-entry-form" class="space-y-4 border border-gray-100 dark:border-gray-808 p-6 rounded-3xl bg-gray-50/20 dark:bg-gray-808/10">
+                <h4 class="text-lg font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-808 pb-2">New Payment Form</h4>
+                
+                <input type="hidden" name="student_id" id="form-student-id">
+                <input type="hidden" name="academy_id" id="form-academy-id">
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <!-- Date -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Payment Date</label>
+                        <input type="text" id="payment_date" name="payment_date" required class="datepicker bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                    </div>
+
+                    <!-- Period selection -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Period</label>
+                        <select id="payment_period" name="payment_period" class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 font-bold text-primary-600 dark:text-primary-400">
+                            <option value="1 Month">1 Month</option>
+                            <option value="3 Months" selected>3 Months (Default)</option>
+                            <option value="6 Months">6 Months</option>
+                            <option value="1 Year">1 Year</option>
+                        </select>
+                    </div>
+
+                    <!-- Next Due Date (Auto Calculated) -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Next Due Date (Auto)</label>
+                        <input type="text" id="next_due_date" name="next_due_date" readonly class="bg-gray-100 dark:bg-gray-750 border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-sm rounded-xl block w-full p-2.5 font-bold cursor-not-allowed">
+                    </div>
+
+                    <!-- Fee calculation display -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Total Amount Due (₹)</label>
+                        <input type="number" id="amount_due" name="amount_due" required readonly class="bg-gray-100 dark:bg-gray-750 border border-gray-300 dark:border-gray-700 text-gray-850 dark:text-gray-200 text-sm font-bold rounded-xl block w-full p-2.5 cursor-not-allowed">
+                    </div>
+
+                    <!-- Concession/Discount -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Discount/Scholarship (₹)</label>
+                        <input type="number" id="discount" name="discount" step="0.01" value="0" class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                    </div>
+
+                    <!-- Amount Paid -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Amount Paid (₹)*</label>
+                        <input type="number" id="amount_paid" name="amount_paid" step="0.01" required class="bg-white dark:bg-gray-800 border border-emerald-300 dark:border-emerald-800 text-emerald-600 dark:text-emerald-450 text-sm font-bold rounded-xl focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5">
+                    </div>
+
+                    <!-- Payment Mode -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Payment Mode</label>
+                        <select id="payment_mode" name="payment_mode" class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                            <option value="Cash">Cash</option>
+                            <option value="Card">Card</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Online">Online</option>
+                        </select>
+                    </div>
+
+                    <!-- Transaction ID -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Transaction ID (if bank/UPI)</label>
+                        <input type="text" id="transaction_id" name="transaction_id" class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                    </div>
+
+                    <!-- Remaining Balance -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Remaining Balance (₹)</label>
+                        <input type="number" id="balance" name="balance" readonly class="bg-gray-100 dark:bg-gray-750 border border-gray-300 dark:border-gray-700 text-red-600 dark:text-red-400 text-sm font-bold rounded-xl block w-full p-2.5 cursor-not-allowed">
+                    </div>
+
+                    <!-- Remarks & Quick tags -->
+                    <div class="sm:col-span-3">
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Remarks / Notes</label>
+                        <input type="text" id="remarks" name="remarks" class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 mb-2" placeholder="Add custom notes here...">
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="setQuickRemark('Paid in full')" class="px-3 py-1 bg-gray-155 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-xs text-gray-600 dark:text-gray-400">Paid in full</button>
+                            <button type="button" onclick="setQuickRemark('Will Pay Next Week')" class="px-3 py-1 bg-gray-155 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-xs text-gray-600 dark:text-gray-400">Will Pay Next Week</button>
+                            <button type="button" onclick="setQuickRemark('Financial Issue')" class="px-3 py-1 bg-gray-155 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-xs text-gray-600 dark:text-gray-400">Financial Issue</button>
+                            <button type="button" onclick="setQuickRemark('Scholarship')" class="px-3 py-1 bg-gray-155 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-xs text-gray-600 dark:text-gray-400">Scholarship</button>
+                            <button type="button" onclick="setQuickRemark('Parent Requested Extension')" class="px-3 py-1 bg-gray-155 dark:bg-gray-855 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-xs text-gray-600 dark:text-gray-400">Parent Requested Extension</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Desk -->
+                <div class="flex justify-between items-center border-t border-gray-100 dark:border-gray-808 pt-4">
+                    <span id="partial-payment-badge" class="hidden px-3 py-1 bg-red-100 text-red-800 dark:bg-red-955/20 dark:text-red-400 text-xs font-bold rounded-full">
+                        <i class="fa-solid fa-circle-exclamation mr-1"></i> Partial Payment Mode
+                    </span>
+                    <div></div>
+                    <button type="submit" class="py-3.5 px-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl transition shadow-lg shadow-emerald-500/10 flex items-center space-x-2">
+                        <i class="fa-solid fa-receipt"></i>
+                        <span>Register & Generate Receipt</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Payment History Table -->
+            <div class="space-y-3">
+                <h4 class="text-lg font-bold text-gray-900 dark:text-white">Previous Payments</h4>
+                <div class="overflow-x-auto border border-gray-100 dark:border-gray-808 rounded-3xl">
+                    <table class="w-full text-left text-sm text-gray-500 dark:text-gray-450">
+                        <thead class="bg-gray-50/70 dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-300 uppercase">
+                            <tr>
+                                <th class="px-4 py-3">Receipt No</th>
+                                <th class="px-4 py-3">Paid Date</th>
+                                <th class="px-4 py-3">Period</th>
+                                <th class="px-4 py-3">Paid Amount</th>
+                                <th class="px-4 py-3">Balance</th>
+                                <th class="px-4 py-3">Remarks</th>
+                                <th class="px-4 py-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payment-history-tbody" class="divide-y divide-gray-100 dark:divide-gray-850">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="payment-workspace-placeholder" class="flex-grow flex flex-col justify-center items-center text-center text-gray-400 p-8">
+            <i class="fa-solid fa-credit-card text-7xl text-gray-255 dark:text-gray-800 mb-4 animate-pulse"></i>
+            <h4 class="text-lg font-bold text-gray-500 dark:text-gray-400">Payment Entry Desk</h4>
+            <p class="text-sm max-w-md mt-1">Search for a student using the left panel to load invoice structures, outstanding balances, and historical payments.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Initialize payment desk datepicker
+    const datePicker = flatpickr("#payment_date", {
+        dateFormat: "d-m-Y",
+        defaultDate: new Date(),
+        allowInput: true
+    });
+
+    const academySelect = document.getElementById('payment-academy');
+    const searchInput = document.getElementById('student-search-input');
+    const dropdown = document.getElementById('autocomplete-dropdown');
+    
+    let loadedStudent = null;
+
+    // Student Lookup Key Events
+    searchInput.addEventListener('input', function() {
+        const query = this.value;
+        const academyId = academySelect.value;
+        
+        if (query.length < 3) {
+            dropdown.classList.add('hidden');
+            return;
+        }
+
+        // Fetch matching students
+        fetch(`/api/students/search/?q=${query}&academy_id=${academyId}`)
+            .then(res => res.json())
+            .then(data => {
+                dropdown.innerHTML = '';
+                if (data.results.length === 0) {
+                    dropdown.innerHTML = '<div class="p-4 text-center text-gray-400 text-xs">No students found</div>';
+                    dropdown.classList.remove('hidden');
+                    return;
+                }
+
+                data.results.forEach(student => {
+                    const div = document.createElement('div');
+                    div.className = 'p-3 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition flex justify-between items-center';
+                    div.innerHTML = `
+                        <div>
+                            <div class="text-sm font-bold text-gray-900 dark:text-white">${student.name}</div>
+                            <div class="text-xs text-gray-505">${student.student_id} | Admission: ${student.admission_no}</div>
+                        </div>
+                        <span class="text-xs font-semibold px-2 py-1 bg-primary-50 dark:bg-primary-950/20 text-primary-600 rounded-lg">${student.course}</span>
+                    `;
+                    div.onclick = () => selectStudent(student.id);
+                    dropdown.appendChild(div);
+                });
+                dropdown.classList.remove('hidden');
+            });
+    });
+
+    // Close dropdown on click outside
+    document.addEventListener('click', function(e) {
+        if (!dropdown.contains(e.target) && e.target !== searchInput) {
+            dropdown.classList.add('hidden');
+        }
+    });
+
+    function selectStudent(id) {
+        dropdown.classList.add('hidden');
+        searchInput.value = '';
+        
+        // Fetch complete details
+        fetch(`/api/students/${id}/details/`)
+            .then(res => res.json())
+            .then(data => {
+                loadedStudent = data.student;
+                displayStudentPreview(data.student);
+                displayPaymentWorkspace(data);
+            });
+    }
+
+    function displayStudentPreview(s) {
+        document.getElementById('student-preview-placeholder').classList.add('hidden');
+        document.getElementById('student-preview-card').classList.remove('hidden');
+        
+        // Photo or placeholder
+        const photoContainer = document.getElementById('prev-photo-container');
+        if (s.photo_url) {
+            photoContainer.innerHTML = `<img src="${s.photo_url}" class="w-12 h-12 rounded-full object-cover">`;
+        } else {
+            photoContainer.innerHTML = s.name.substring(0, 2).toUpperCase();
+        }
+
+        document.getElementById('prev-name').innerText = s.name;
+        document.getElementById('prev-id').innerText = s.student_id;
+        document.getElementById('prev-course').innerText = s.course;
+        document.getElementById('prev-batch').innerText = s.batch;
+        document.getElementById('prev-trainer').innerText = s.trainer;
+        document.getElementById('prev-fee').innerText = `₹${s.monthly_fee}`;
+        document.getElementById('prev-due-date').innerText = s.last_due_date_formatted;
+        
+        const badge = document.getElementById('prev-due-status');
+        badge.innerText = s.due_status;
+        badge.className = 'inline-block px-3 py-1.5 rounded-xl text-xs font-bold text-white ';
+        if (s.due_status === 'Overdue') {
+            badge.classList.add('bg-red-500');
+        } else if (s.due_status === 'Due Soon') {
+            badge.classList.add('bg-amber-500');
+        } else {
+            badge.classList.add('bg-emerald-500');
+        }
+    }
+
+    function displayPaymentWorkspace(data) {
+        const s = data.student;
+        document.getElementById('payment-workspace-placeholder').classList.add('hidden');
+        document.getElementById('payment-workspace').classList.remove('hidden');
+
+        // Form Fields Seed
+        document.getElementById('form-student-id').value = s.id;
+        document.getElementById('form-academy-id').value = s.academy_id;
+
+        // Dues summary info
+        document.getElementById('sum-monthly-rate').innerText = `₹${s.monthly_fee}`;
+        document.getElementById('sum-outstanding').innerText = `₹${s.outstanding_balance}`;
+        document.getElementById('sum-last-due').innerText = s.last_due_date_formatted;
+
+        // Reset inputs
+        document.getElementById('discount').value = s.discount || 0;
+        document.getElementById('remarks').value = '';
+        document.getElementById('transaction_id').value = '';
+
+        // Calculate initial amounts
+        calculateDues();
+        
+        // Populate history
+        const tbody = document.getElementById('payment-history-tbody');
+        tbody.innerHTML = '';
+        if (data.payments.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">No payment history recorded for this student.</td></tr>';
+        } else {
+            data.payments.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50/50 dark:hover:bg-gray-800/30';
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-semibold text-gray-900 dark:text-white">${p.receipt_no}</td>
+                    <td class="px-4 py-3 text-xs">${p.payment_date}</td>
+                    <td class="px-4 py-3 font-medium">${p.payment_period}</td>
+                    <td class="px-4 py-3 text-emerald-600 dark:text-emerald-450 font-bold">₹${p.amount_paid}</td>
+                    <td class="px-4 py-3 text-xs text-red-500 font-semibold">₹${p.balance}</td>
+                    <td class="px-4 py-3 text-xs">${p.remarks || '-'}</td>
+                    <td class="px-4 py-3 text-right">
+                        <a href="/receipt/${p.id}/pdf/" target="_blank" class="text-xs py-1.5 px-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-lg transition inline-flex items-center space-x-1">
+                            <i class="fa-solid fa-print"></i>
+                            <span>Print</span>
+                        </a>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    }
+
+    // Calculations
+    const periodSelect = document.getElementById('payment_period');
+    const discountInput = document.getElementById('discount');
+    const paidInput = document.getElementById('amount_paid');
+    const dueInput = document.getElementById('amount_due');
+    const balanceInput = document.getElementById('balance');
+    const partialBadge = document.getElementById('partial-payment-badge');
+
+    periodSelect.addEventListener('change', calculateDues);
+    discountInput.addEventListener('input', calculateDues);
+    paidInput.addEventListener('input', calculateRemainingBalance);
+
+    function calculateDues() {
+        if (!loadedStudent) return;
+        const periodStr = periodSelect.value;
+        let factor = 3; // default
+        if (periodStr === '1 Month') factor = 1;
+        if (periodStr === '3 Months') factor = 3;
+        if (periodStr === '6 Months') factor = 6;
+        if (periodStr === '1 Year') factor = 12;
+
+        const monthlyFee = parseFloat(loadedStudent.monthly_fee);
+        const outstanding = parseFloat(loadedStudent.outstanding_balance);
+        const currentDiscount = parseFloat(discountInput.value) || 0;
+
+        // Base Due = (Monthly Fee * Period) + Outstanding Dues
+        const totalDue = (monthlyFee * factor) + outstanding;
+        dueInput.value = totalDue.toFixed(2);
+
+        // Prepopulate Paid as Total Due - Concession
+        const netToPay = Math.max(0, totalDue - currentDiscount);
+        paidInput.value = netToPay.toFixed(2);
+        
+        // Next due date calculation
+        calculateNextDueDate(factor);
+        calculateRemainingBalance();
+    }
+
+    function calculateNextDueDate(months) {
+        if (!loadedStudent) return;
+        
+        // loadedStudent.last_due_date is in dd-mm-yyyy from API
+        const parts = loadedStudent.last_due_date.split('-');
+        const baseDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+        
+        // Add months safely
+        let d = baseDate.getDate();
+        baseDate.setMonth(baseDate.getMonth() + months);
+        if (baseDate.getDate() != d) {
+            baseDate.setDate(0); // handle month overlap
+        }
+        
+        // Format dd-mm-yyyy
+        const day = String(baseDate.getDate()).padStart(2, '0');
+        const m = String(baseDate.getMonth() + 1).padStart(2, '0');
+        const y = baseDate.getFullYear();
+        
+        document.getElementById('next_due_date').value = `${day}-${m}-${y}`;
+    }
+
+    // Remaining balance
+    function calculateRemainingBalance() {
+        const totalDue = parseFloat(dueInput.value) || 0;
+        const discount = parseFloat(discountInput.value) || 0;
+        const paid = parseFloat(paidInput.value) || 0;
+
+        const balance = Math.max(0, totalDue - discount - paid);
+        balanceInput.value = balance.toFixed(2);
+
+        if (balance > 0) {
+            partialBadge.classList.remove('hidden');
+        } else {
+            partialBadge.classList.add('hidden');
+        }
+    }
+
+    function setQuickRemark(val) {
+        document.getElementById('remarks').value = val;
+    }
+
+    // Handle Query Parameter student selection
+    const urlParams = new URLSearchParams(window.location.search);
+    const studentIdParam = urlParams.get('student_id');
+    if (studentIdParam) {
+        selectStudent(studentIdParam);
+    }
+
+    // Submit Payment
+    document.getElementById('payment-entry-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const studentId = document.getElementById('form-student-id').value;
+        const fd = new FormData(this);
+        
+        fetch(`/payment/create/`, {
+            method: 'POST',
+            body: fd,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    title: 'Payment Successful!',
+                    text: `Receipt ${data.receipt_no} generated successfully.`,
+                    icon: 'success',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fa-solid fa-print"></i> Print Receipt',
+                    cancelButtonText: 'Dismiss',
+                    customClass: {
+                        confirmButton: 'bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-xl mr-2',
+                        cancelButton: 'bg-gray-105 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-xl'
+                    },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.open(`/receipt/${data.payment_id}/pdf/`, '_blank');
+                    }
+                    // Reload workspace details
+                    selectStudent(studentId);
+                });
+            } else {
+                Swal.fire('Error', data.message || 'Failed to submit payment.', 'error');
+            }
+        });
+    });
+</script>
+{% endblock %}

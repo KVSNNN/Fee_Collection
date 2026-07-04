@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+
+{% block title %}System Settings | FeeFlow ERP{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div>
+        <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">System Settings & Data Management</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Configure structural metadata, API integrations, prefixes, and backup operations.</p>
+    </div>
+
+    <!-- Layout: Tabs for Settings Categories -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Sidebar Navigation for Tabs -->
+        <div class="lg:col-span-1 space-y-2">
+            <button onclick="switchTab('tab-general')" id="btn-tab-general" class="w-full text-left px-5 py-3 rounded-2xl font-bold transition text-primary-600 bg-primary-50 dark:bg-primary-900/30 dark:text-primary-400">
+                <i class="fa-solid fa-gear mr-2 w-5"></i> General Config
+            </button>
+            <button onclick="switchTab('tab-courses')" id="btn-tab-courses" class="w-full text-left px-5 py-3 rounded-2xl font-bold transition text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                <i class="fa-solid fa-graduation-cap mr-2 w-5"></i> Courses & Batches
+            </button>
+            <button onclick="switchTab('tab-trainers')" id="btn-tab-trainers" class="w-full text-left px-5 py-3 rounded-2xl font-bold transition text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                <i class="fa-solid fa-user-tie mr-2 w-5"></i> Trainers & Instructors
+            </button>
+            <button onclick="switchTab('tab-backup')" id="btn-tab-backup" class="w-full text-left px-5 py-3 rounded-2xl font-bold transition text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                <i class="fa-solid fa-database mr-2 w-5"></i> Backup & Restore
+            </button>
+        </div>
+
+        <!-- Settings tab content panels (3 Cols) -->
+        <div class="lg:col-span-3 bg-white dark:bg-darkCard p-8 rounded-3xl border border-gray-150 dark:border-gray-800/80 shadow-sm min-h-[450px]">
+            
+            <!-- Tab 1: General Settings -->
+            <div id="tab-general" class="tab-panel space-y-6">
+                <h3 class="text-xl font-extrabold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-3">General Settings</h3>
+                
+                <form method="POST" action="{% url 'update_settings' %}" class="space-y-6">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Receipt Prefix -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Receipt Number Prefix</label>
+                            <input type="text" name="receipt_prefix" value="{{ sys_settings.receipt_prefix }}" required class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-3 transition">
+                        </div>
+
+                        <!-- Financial Year -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Active Financial Year</label>
+                            <input type="text" name="financial_year" value="{{ sys_settings.financial_year }}" required placeholder="e.g. 2026-2027" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-3 transition">
+                        </div>
+
+                        <!-- SMS Setting -->
+                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800">
+                            <div>
+                                <h6 class="font-bold text-sm text-gray-900 dark:text-white">SMS Notifications</h6>
+                                <p class="text-xs text-gray-400 mt-0.5">Send transaction details to parents via text messages</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="sms_enabled" value="True" {% if sys_settings.sms_enabled == 'True' %}checked{% endif %} class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-750 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                            </label>
+                        </div>
+
+                        <!-- Email Setting -->
+                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800">
+                            <div>
+                                <h6 class="font-bold text-sm text-gray-900 dark:text-white">Email Receipts</h6>
+                                <p class="text-xs text-gray-400 mt-0.5">Automate email delivery of receipt files upon fee deposit</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="email_enabled" value="True" {% if sys_settings.email_enabled == 'True' %}checked{% endif %} class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-750 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                            </label>
+                        </div>
+
+                        <!-- WhatsApp Notification -->
+                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/30 rounded-2xl border border-gray-150 dark:border-gray-800 md:col-span-2">
+                            <div>
+                                <h6 class="font-bold text-sm text-gray-905 dark:text-white">WhatsApp Direct Links</h6>
+                                <p class="text-xs text-gray-400 mt-0.5">Generate customized WhatsApp chat template triggers for collection reminders</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="whatsapp_enabled" value="True" {% if sys_settings.whatsapp_enabled == 'True' %}checked{% endif %} class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-750 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 px-6 rounded-2xl transition">
+                        Save System Settings
+                    </button>
+                </form>
+            </div>
+
+            <!-- Tab 2: Courses & Batches -->
+            <div id="tab-courses" class="tab-panel hidden space-y-8">
+                <!-- Courses section -->
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-3">
+                        <h3 class="text-xl font-extrabold text-gray-950 dark:text-white">Courses</h3>
+                        <button onclick="toggleCourseForm()" class="text-xs font-bold text-primary-600 hover:underline"><i class="fa-solid fa-plus mr-1"></i> Add Course</button>
+                    </div>
+                    
+                    <!-- Course Form -->
+                    <form id="course-form" method="POST" action="{% url 'create_course' %}" class="hidden p-4 bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl space-y-4">
+                        {% csrf_token %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold mb-1">Course Name</label>
+                                <input type="text" name="course_name" required class="bg-white dark:bg-gray-800 border border-gray-350 dark:border-gray-700 rounded-xl text-sm w-full p-2">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold mb-1">Academy Scope</label>
+                                <select name="course_academy_id" required class="bg-white dark:bg-gray-800 border border-gray-355 dark:border-gray-700 rounded-xl text-sm w-full p-2">
+                                    {% for acad in academies_list %}
+                                        <option value="{{ acad.id }}">{{ acad.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold py-2 px-4 rounded-xl transition">Create</button>
+                    </form>
+
+                    <!-- Courses Table -->
+                    <div class="overflow-x-auto border border-gray-100 dark:border-gray-800 rounded-2xl">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-gray-50 dark:bg-gray-800 text-gray-655 dark:text-gray-300 uppercase font-bold">
+                                <tr>
+                                    <th class="p-3">Course Name</th>
+                                    <th class="p-3">Academy</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 dark:divide-gray-850">
+                                {% for course in courses_list %}
+                                <tr>
+                                    <td class="p-3 font-semibold text-gray-805 dark:text-white">{{ course.name }}</td>
+                                    <td class="p-3 text-gray-500">{{ course.academy.name }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="2" class="p-3 text-center text-gray-400">No courses defined.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Batches section -->
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-3">
+                        <h3 class="text-xl font-extrabold text-gray-950 dark:text-white">Batches</h3>
+                        <button onclick="toggleBatchForm()" class="text-xs font-bold text-primary-600 hover:underline"><i class="fa-solid fa-plus mr-1"></i> Add Batch</button>
+                    </div>
+
+                    <!-- Batch Form -->
+                    <form id="batch-form" method="POST" action="{% url 'create_batch' %}" class="hidden p-4 bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl space-y-4">
+                        {% csrf_token %}
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold mb-1">Batch Name</label>
+                                <input type="text" name="batch_name" required class="bg-white dark:bg-gray-800 border border-gray-350 dark:border-gray-700 rounded-xl text-sm w-full p-2">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold mb-1">Course Scope</label>
+                                <select name="batch_course_id" required class="bg-white dark:bg-gray-800 border border-gray-355 dark:border-gray-700 rounded-xl text-sm w-full p-2">
+                                    {% for c in courses_list %}
+                                        <option value="{{ c.id }}">{{ c.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold mb-1">Trainer Assign</label>
+                                <select name="batch_trainer_id" required class="bg-white dark:bg-gray-800 border border-gray-355 dark:border-gray-700 rounded-xl text-sm w-full p-2">
+                                    {% for t in trainers_list %}
+                                        <option value="{{ t.id }}">{{ t.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold py-2 px-4 rounded-xl transition">Create</button>
+                    </form>
+
+                    <!-- Batches Table -->
+                    <div class="overflow-x-auto border border-gray-100 dark:border-gray-800 rounded-2xl">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-gray-50 dark:bg-gray-800 text-gray-655 dark:text-gray-300 uppercase font-bold">
+                                <tr>
+                                    <th class="p-3">Batch Name</th>
+                                    <th class="p-3">Course</th>
+                                    <th class="p-3">Trainer</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 dark:divide-gray-850">
+                                {% for batch in batches_list %}
+                                <tr>
+                                    <td class="p-3 font-semibold text-gray-805 dark:text-white">{{ batch.name }}</td>
+                                    <td class="p-3 text-gray-500">{{ batch.course.name }}</td>
+                                    <td class="p-3 text-gray-500">{{ batch.trainer.name }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="3" class="p-3 text-center text-gray-400">No batches defined.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Trainers -->
+            <div id="tab-trainers" class="tab-panel hidden space-y-6">
+                <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-3">
+                    <h3 class="text-xl font-extrabold text-gray-950 dark:text-white">Trainers</h3>
+                    <button onclick="toggleTrainerForm()" class="text-xs font-bold text-primary-600 hover:underline"><i class="fa-solid fa-plus mr-1"></i> Register Trainer</button>
+                </div>
+
+                <!-- Trainer Form -->
+                <form id="trainer-form" method="POST" action="{% url 'create_trainer' %}" class="hidden p-4 bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl space-y-4">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Trainer Name</label>
+                            <input type="text" name="trainer_name" required class="bg-white dark:bg-gray-800 border border-gray-350 dark:border-gray-700 rounded-xl text-sm w-full p-2">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Email</label>
+                            <input type="email" name="trainer_email" required class="bg-white dark:bg-gray-800 border border-gray-355 dark:border-gray-700 rounded-xl text-sm w-full p-2">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Phone</label>
+                            <input type="text" name="trainer_phone" required class="bg-white dark:bg-gray-800 border border-gray-355 dark:border-gray-700 rounded-xl text-sm w-full p-2">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Academy</label>
+                            <select name="trainer_academy_id" required class="bg-white dark:bg-gray-800 border border-gray-355 dark:border-gray-700 rounded-xl text-sm w-full p-2">
+                                {% for acad in academies_list %}
+                                    <option value="{{ acad.id }}">{{ acad.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold mb-1">Specialization</label>
+                            <input type="text" name="trainer_specialization" class="bg-white dark:bg-gray-800 border border-gray-350 dark:border-gray-700 rounded-xl text-sm w-full p-2">
+                        </div>
+                    </div>
+                    <button type="submit" class="bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold py-2 px-4 rounded-xl transition">Register</button>
+                </form>
+
+                <!-- Trainers Table -->
+                <div class="overflow-x-auto border border-gray-100 dark:border-gray-800 rounded-2xl">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-gray-50 dark:bg-gray-800 text-gray-655 dark:text-gray-300 uppercase font-bold">
+                            <tr>
+                                <th class="p-3">Trainer Name</th>
+                                <th class="p-3">Phone</th>
+                                <th class="p-3">Specialization</th>
+                                <th class="p-3">Academy</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-855">
+                            {% for trainer in trainers_list %}
+                            <tr>
+                                <td class="p-3 font-semibold text-gray-805 dark:text-white">{{ trainer.name }}</td>
+                                <td class="p-3 text-gray-550">{{ trainer.phone }}</td>
+                                <td class="p-3 text-gray-550">{{ trainer.specialization|default:"-" }}</td>
+                                <td class="p-3 text-gray-500">{{ trainer.academy.name }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="p-3 text-center text-gray-400">No trainers defined.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab 4: Backup & Restore -->
+            <div id="tab-backup" class="tab-panel hidden space-y-6">
+                <h3 class="text-xl font-extrabold text-gray-955 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-3">Database Backup & Recovery</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Backup utility block -->
+                    <div class="p-6 bg-gray-50 dark:bg-gray-800/30 rounded-3xl border border-gray-100 dark:border-gray-800 space-y-4">
+                        <h4 class="font-bold text-gray-905 dark:text-white"><i class="fa-solid fa-cloud-arrow-down mr-2 text-primary-500"></i> Backup Database</h4>
+                        <p class="text-xs text-gray-500">Download a complete, self-contained backup zip archive of the active SQLite database file. Store it securely.</p>
+                        
+                        <a href="{% url 'trigger_backup' %}" class="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 px-5 rounded-2xl transition shadow-lg shadow-primary-500/10">
+                            <i class="fa-solid fa-download"></i>
+                            <span>Create Manual Backup</span>
+                        </a>
+                    </div>
+
+                    <!-- Restore utility block -->
+                    <div class="p-6 bg-gray-50 dark:bg-gray-800/30 rounded-3xl border border-gray-100 dark:border-gray-800 space-y-4">
+                        <h4 class="font-bold text-gray-905 dark:text-white text-red-600 dark:text-red-400"><i class="fa-solid fa-circle-exclamation mr-2"></i> Restore Database</h4>
+                        <p class="text-xs text-gray-500">Upload a previously generated backup zip/database file to replace the current system state. WARNING: This replaces all current tables.</p>
+                        
+                        <form method="POST" action="{% url 'restore_backup' %}" enctype="multipart/form-data" class="space-y-3">
+                            {% csrf_token %}
+                            <input type="file" name="backup_file" required accept=".zip,.db,.sqlite3" class="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 cursor-pointer">
+                            <button type="submit" class="bg-red-600 hover:bg-red-750 text-white text-xs font-bold py-2 px-4 rounded-xl transition">
+                                Upload & Restore
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function switchTab(tabId) {
+        // Hide all panels
+        document.querySelectorAll('.tab-panel').forEach(panel => {
+            panel.classList.add('hidden');
+        });
+        // Show active panel
+        document.getElementById(tabId).classList.remove('hidden');
+
+        // Toggle buttons active class
+        const tabs = ['tab-general', 'tab-courses', 'tab-trainers', 'tab-backup'];
+        tabs.forEach(t => {
+            const btn = document.getElementById('btn-' + t);
+            if (t === tabId) {
+                btn.className = "w-full text-left px-5 py-3 rounded-2xl font-bold transition text-primary-600 bg-primary-50 dark:bg-primary-900/30 dark:text-primary-400";
+            } else {
+                btn.className = "w-full text-left px-5 py-3 rounded-2xl font-bold transition text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800";
+            }
+        });
+    }
+
+    function toggleCourseForm() {
+        document.getElementById('course-form').classList.toggle('hidden');
+    }
+    function toggleBatchForm() {
+        document.getElementById('batch-form').classList.toggle('hidden');
+    }
+    function toggleTrainerForm() {
+        document.getElementById('trainer-form').classList.toggle('hidden');
+    }
+</script>
+{% endblock %}

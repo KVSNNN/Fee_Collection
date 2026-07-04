@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block title %}Collection Reports | FeeFlow ERP{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">Collection & Dues Reports</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Audit collections, track outstandings, analyze concession rates, and export statements.</p>
+        </div>
+        <div class="flex items-center space-x-2">
+            <!-- Export Excel Link -->
+            <button onclick="triggerExport('excel')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-5 rounded-2xl transition shadow-lg shadow-emerald-500/10 flex items-center space-x-2">
+                <i class="fa-solid fa-file-excel"></i>
+                <span>Export Excel</span>
+            </button>
+            <!-- Export CSV Link -->
+            <button onclick="triggerExport('csv')" class="py-2.5 px-4 bg-gray-155 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-2xl transition flex items-center space-x-2">
+                <i class="fa-solid fa-file-csv"></i>
+                <span>Export CSV</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Widgets Card -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Expected Collection -->
+        <div class="bg-white dark:bg-darkCard p-5 rounded-3xl border border-gray-150 dark:border-gray-800/80 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-[11px] font-semibold text-gray-450 uppercase tracking-wider block">Expected (Scope)</span>
+                    <h3 class="text-2xl font-black text-gray-900 dark:text-white mt-1">₹{{ summary.expected|floatformat:2 }}</h3>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collected Collection -->
+        <div class="bg-white dark:bg-darkCard p-5 rounded-3xl border border-gray-150 dark:border-gray-800/80 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-[11px] font-semibold text-gray-450 uppercase tracking-wider block">Collected (Scope)</span>
+                    <h3 class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">₹{{ summary.collected|floatformat:2 }}</h3>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Outstanding Dues -->
+        <div class="bg-white dark:bg-darkCard p-5 rounded-3xl border border-gray-150 dark:border-gray-800/80 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-[11px] font-semibold text-gray-450 uppercase tracking-wider block">Outstanding Balances</span>
+                    <h3 class="text-2xl font-black text-red-600 dark:text-red-400 mt-1">₹{{ summary.outstanding|floatformat:2 }}</h3>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 flex items-center justify-center">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collection Rate % -->
+        <div class="bg-white dark:bg-darkCard p-5 rounded-3xl border border-gray-150 dark:border-gray-800/80 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-[11px] font-semibold text-gray-450 uppercase tracking-wider block">Collection Rate</span>
+                    <h3 class="text-2xl font-black text-gray-900 dark:text-white mt-1">{{ summary.rate|floatformat:1 }}%</h3>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                    <i class="fa-solid fa-percent"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Desk -->
+    <div class="bg-white dark:bg-darkCard p-6 rounded-3xl border border-gray-150 dark:border-gray-800/80 shadow-sm">
+        <form method="GET" id="report-filter-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Academy -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-405 uppercase tracking-wider mb-2">Academy</label>
+                <select name="report_academy_id" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl block w-full p-2.5">
+                    <option value="">All Academies</option>
+                    {% for acad in academies_list %}
+                        <option value="{{ acad.id }}" {% if filters.report_academy_id == acad.id|stringformat:"i" %}selected{% endif %}>{{ acad.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Course -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-405 uppercase tracking-wider mb-2">Course</label>
+                <select name="report_course_id" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl block w-full p-2.5">
+                    <option value="">All Courses</option>
+                    {% for course in all_courses %}
+                        <option value="{{ course.id }}" {% if filters.report_course_id == course.id|stringformat:"i" %}selected{% endif %}>{{ course.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Trainer -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-405 uppercase tracking-wider mb-2">Trainer</label>
+                <select name="report_trainer_id" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl block w-full p-2.5">
+                    <option value="">All Trainers</option>
+                    {% for trainer in all_trainers %}
+                        <option value="{{ trainer.id }}" {% if filters.report_trainer_id == trainer.id|stringformat:"i" %}selected{% endif %}>{{ trainer.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Payment Mode -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-405 uppercase tracking-wider mb-2">Payment Mode</label>
+                <select name="report_payment_mode" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-905 dark:text-white text-sm rounded-xl block w-full p-2.5">
+                    <option value="">All Modes</option>
+                    <option value="Cash" {% if filters.report_payment_mode == 'Cash' %}selected{% endif %}>Cash</option>
+                    <option value="Card" {% if filters.report_payment_mode == 'Card' %}selected{% endif %}>Card</option>
+                    <option value="UPI" {% if filters.report_payment_mode == 'UPI' %}selected{% endif %}>UPI</option>
+                    <option value="Bank Transfer" {% if filters.report_payment_mode == 'Bank Transfer' %}selected{% endif %}>Bank Transfer</option>
+                    <option value="Online" {% if filters.report_payment_mode == 'Online' %}selected{% endif %}>Online</option>
+                </select>
+            </div>
+
+            <!-- Date Start -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-405 uppercase tracking-wider mb-2">Date Start</label>
+                <input type="text" name="date_start" value="{{ filters.date_start }}" placeholder="YYYY-MM-DD" class="datepicker bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl block w-full p-2.5">
+            </div>
+
+            <!-- Date End -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-405 uppercase tracking-wider mb-2">Date End</label>
+                <input type="text" name="date_end" value="{{ filters.date_end }}" placeholder="YYYY-MM-DD" class="datepicker bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl block w-full p-2.5">
+            </div>
+
+            <!-- Status filter -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-450 uppercase tracking-wider mb-2">Payment Status</label>
+                <select name="report_status" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl block w-full p-2.5">
+                    <option value="">All Statuses</option>
+                    <option value="Paid" {% if filters.report_status == 'Paid' %}selected{% endif %}>Paid</option>
+                    <option value="Partial Payment" {% if filters.report_status == 'Partial Payment' %}selected{% endif %}>Partial Payment</option>
+                </select>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex items-end space-x-2">
+                <button type="submit" class="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition">
+                    Apply Filters
+                </button>
+                <a href="{% url 'reports' %}" class="py-2.5 px-3 bg-gray-105 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-xl text-sm transition flex items-center justify-center">
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Reports Table Card -->
+    <div class="bg-white dark:bg-darkCard rounded-3xl border border-gray-150 dark:border-gray-800/80 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-500 dark:text-gray-455">
+                <thead class="bg-gray-50/70 dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-300 uppercase">
+                    <tr>
+                        <th class="px-6 py-4 rounded-l-xl">Receipt</th>
+                        <th class="px-6 py-4">Student Info</th>
+                        <th class="px-6 py-4">Academy</th>
+                        <th class="px-6 py-4">Mode / Trans ID</th>
+                        <th class="px-6 py-4 text-emerald-600 dark:text-emerald-450">Paid Amount</th>
+                        <th class="px-6 py-4 text-red-500">Balance</th>
+                        <th class="px-6 py-4">Remarks</th>
+                        <th class="px-6 py-4 rounded-r-xl text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-850">
+                    {% for payment in collections %}
+                    <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
+                        <td class="px-6 py-4 font-semibold text-gray-950 dark:text-white">
+                            {{ payment.receipt_no }}
+                            <div class="text-[10px] text-gray-400 mt-0.5">{{ payment.payment_date|date:"d-m-Y" }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-bold text-gray-900 dark:text-white">{{ payment.student.name }}</div>
+                            <div class="text-xs text-gray-400">{{ payment.student.student_id }} | {{ payment.student.course.name }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-xs font-medium">
+                            {{ payment.academy.name }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-semibold">{{ payment.payment_mode }}</div>
+                            <div class="text-xs text-gray-400">{{ payment.transaction_id|default:"-" }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-base font-black text-emerald-600 dark:text-emerald-450">
+                            ₹{{ payment.amount_paid }}
+                            <div class="text-[10px] text-gray-400 font-semibold">{{ payment.payment_period }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-sm font-semibold text-red-500">
+                            ₹{{ payment.balance }}
+                        </td>
+                        <td class="px-6 py-4 text-xs">
+                            {{ payment.remarks|default:"-" }}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <a href="{% url 'receipt_pdf' payment.id %}" target="_blank" class="py-1 px-3 bg-gray-105 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-lg text-xs transition">
+                                <i class="fa-solid fa-print"></i> Receipt
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-12 text-center text-gray-400">No payment logs match the filter criteria.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    flatpickr(".datepicker", {
+        dateFormat: "d-m-Y",
+        allowInput: true
+    });
+
+    function triggerExport(type) {
+        const form = document.getElementById('report-filter-form');
+        const params = new URLSearchParams(new FormData(form)).toString();
+        window.location.href = `/reports/export/${type}/?` + params;
+    }
+</script>
+{% endblock %}
