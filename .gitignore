@@ -1,0 +1,11 @@
+db.sqlite3
+.env
+__pycache__/
+*.pyc
+media/
+.gemini/
+scratch/
+.agents/
+venv/
+env/
+.vscode/
