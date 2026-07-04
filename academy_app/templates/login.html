@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In | FeeFlow ERP</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        },
+                        darkBg: '#0f172a',
+                        darkCard: '#1e293b',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-950 min-h-screen flex items-center justify-center p-4 transition-colors duration-300">
+    
+    <div class="w-full max-w-md bg-white dark:bg-darkCard rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl p-8 transition-all">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary-500/10 text-primary-600 mb-3">
+                <i class="fa-solid fa-graduation-cap text-3xl"></i>
+            </div>
+            <h2 class="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">Welcome Back</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Sign in to manage academy operations</p>
+        </div>
+
+        {% if error_msg %}
+            <div class="mb-4 p-4 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/50 rounded-2xl flex items-center space-x-2 text-sm">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>{{ error_msg }}</span>
+            </div>
+        {% endif %}
+
+        <form method="POST" action="" class="space-y-6">
+            {% csrf_token %}
+            <!-- Username -->
+            <div>
+                <label for="username" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Username</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                        <i class="fa-solid fa-user"></i>
+                    </span>
+                    <input type="text" id="username" name="username" required placeholder="Enter username" class="bg-gray-50 dark:bg-gray-850 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-2xl focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-3.5 transition-all">
+                </div>
+            </div>
+
+            <!-- Password -->
+            <div>
+                <label for="password" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Password</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                        <i class="fa-solid fa-lock"></i>
+                    </span>
+                    <input type="password" id="password" name="password" required placeholder="••••••••" class="bg-gray-50 dark:bg-gray-850 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-2xl focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-3.5 transition-all">
+                </div>
+            </div>
+
+            <!-- Remember me & Forgot password -->
+            <div class="flex items-center justify-between text-sm">
+                <label class="flex items-center space-x-2 text-gray-500 dark:text-gray-400 cursor-pointer">
+                    <input type="checkbox" name="remember" class="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-700 dark:bg-gray-800">
+                    <span>Keep me logged in</span>
+                </label>
+                <span class="text-xs text-primary-600 dark:text-primary-400">Demo Account: admin / admin123</span>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg hover:shadow-primary-500/20 active:scale-[0.98]">
+                Sign In
+            </button>
+        </form>
+    </div>
+
+</body>
+</html>

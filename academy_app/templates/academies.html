@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block title %}Academy Management | FeeFlow ERP{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">Academies</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage and create unlimited sports/academic academies.</p>
+        </div>
+        <button onclick="toggleAcademyModal()" class="bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 px-5 rounded-2xl transition shadow-lg shadow-primary-500/10 flex items-center space-x-2">
+            <i class="fa-solid fa-plus"></i>
+            <span>Create Academy</span>
+        </button>
+    </div>
+
+    <!-- Academy List Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for acad in academies %}
+        <div class="bg-white dark:bg-darkCard rounded-3xl border border-gray-150 dark:border-gray-800/80 shadow-sm p-6 space-y-4 flex flex-col justify-between hover:shadow-md transition">
+            <!-- Academy details -->
+            <div class="space-y-4">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center space-x-3">
+                        {% if acad.logo %}
+                            <img src="{{ acad.logo.url }}" alt="{{ acad.name }}" class="w-12 h-12 rounded-xl object-cover">
+                        {% else %}
+                            <div class="w-12 h-12 rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 flex items-center justify-center font-bold text-lg">
+                                {{ acad.code }}
+                            </div>
+                        {% endif %}
+                        <div>
+                            <h3 class="font-extrabold text-lg text-gray-900 dark:text-white">{{ acad.name }}</h3>
+                            <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider">{{ acad.code }}</span>
+                        </div>
+                    </div>
+                    <!-- Status Badge -->
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if acad.status == 'Active' %}bg-emerald-50 text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-450{% else %}bg-gray-100 text-gray-800 dark:bg-gray-850 dark:text-gray-455{% endif %}">
+                        {{ acad.status }}
+                    </span>
+                </div>
+
+                <div class="space-y-2 text-sm text-gray-500 dark:text-gray-400">
+                    <p class="flex items-center"><i class="fa-solid fa-location-dot w-5 text-gray-400"></i> {{ acad.address }}</p>
+                    <p class="flex items-center"><i class="fa-solid fa-phone w-5 text-gray-400"></i> {{ acad.phone }}</p>
+                    <p class="flex items-center"><i class="fa-solid fa-envelope w-5 text-gray-400"></i> {{ acad.email }}</p>
+                    {% if acad.gst_number %}
+                        <p class="flex items-center"><i class="fa-solid fa-percent w-5 text-gray-400"></i> GST: {{ acad.gst_number }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Action panel -->
+            <div class="border-t border-gray-100 dark:border-gray-800 pt-4 flex justify-between items-center text-xs">
+                <span class="text-gray-400">Registered: {{ acad.created_at|date:"d M Y" }}</span>
+                <div class="flex space-x-2">
+                    <button onclick="editAcademy('{{ acad.id }}', '{{ acad.name|escapejs }}', '{{ acad.code|escapejs }}', '{{ acad.address|escapejs }}', '{{ acad.phone|escapejs }}', '{{ acad.email|escapejs }}', '{{ acad.gst_number|escapejs }}', '{{ acad.status|escapejs }}')" class="p-2 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/30 rounded-xl transition" title="Edit Academy">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <!-- Select Academy Button -->
+                    <a href="?selected_academy_id={{ acad.id }}" class="py-1 px-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-lg transition">
+                        Select
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full py-16 text-center text-gray-400 bg-white dark:bg-darkCard rounded-3xl border border-gray-150 dark:border-gray-800/80 shadow-sm">
+            <i class="fa-solid fa-building-columns text-5xl mb-3 block text-gray-300"></i>
+            <p class="text-lg font-semibold">No academies created yet.</p>
+            <p class="text-sm mt-1">Get started by creating your first academy profile.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Academy Modal (Create/Edit) -->
+    <div id="academy-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-darkCard w-full max-w-xl rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden transform transition-all duration-350">
+            <!-- Modal Header -->
+            <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/20">
+                <h3 id="modal-title" class="text-xl font-extrabold text-gray-900 dark:text-white">Create Academy</h3>
+                <button onclick="toggleAcademyModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Modal Form -->
+            <form id="academy-form" method="POST" action="" enctype="multipart/form-data" class="p-6 space-y-6">
+                {% csrf_token %}
+                <input type="hidden" name="academy_id" id="academy_id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Academy Name -->
+                    <div class="md:col-span-2">
+                        <label for="name" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Academy Name*</label>
+                        <input type="text" id="name" name="name" required class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-3 transition-all">
+                    </div>
+
+                    <!-- Academy Code -->
+                    <div>
+                        <label for="code" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Academy Code*</label>
+                        <input type="text" id="code" name="code" required class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-3 transition-all">
+                    </div>
+
+                    <!-- Phone -->
+                    <div>
+                        <label for="phone" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Phone*</label>
+                        <input type="text" id="phone" name="phone" required class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-3 transition-all">
+                    </div>
+
+                    <!-- Email -->
+                    <div>
+                        <label for="email" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Email*</label>
+                        <input type="email" id="email" name="email" required class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-950 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-3 transition-all">
+                    </div>
+
+                    <!-- GST -->
+                    <div>
+                        <label for="gst_number" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">GST (Optional)</label>
+                        <input type="text" id="gst_number" name="gst_number" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-3 transition-all">
+                    </div>
+
+                    <!-- Address -->
+                    <div class="md:col-span-2">
+                        <label for="address" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Address*</label>
+                        <textarea id="address" name="address" required rows="2" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-3 transition-all"></textarea>
+                    </div>
+
+                    <!-- Logo -->
+                    <div>
+                        <label for="logo" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Logo</label>
+                        <input type="file" id="logo" name="logo" accept="image/*" class="text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer">
+                    </div>
+
+                    <!-- Status -->
+                    <div>
+                        <label for="status" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Status</label>
+                        <select id="status" name="status" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full p-3 transition-all">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Footer buttons -->
+                <div class="flex justify-end space-x-3 border-t border-gray-100 dark:border-gray-800 pt-4">
+                    <button type="button" onclick="toggleAcademyModal()" class="py-2.5 px-5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-750 dark:text-gray-300 font-semibold rounded-2xl transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="py-2.5 px-6 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-2xl transition shadow-lg shadow-primary-500/10">
+                        Save Academy
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleAcademyModal() {
+        const modal = document.getElementById('academy-modal');
+        modal.classList.toggle('hidden');
+        if (modal.classList.contains('hidden')) {
+            document.getElementById('academy-form').reset();
+            document.getElementById('academy_id').value = '';
+            document.getElementById('modal-title').innerText = 'Create Academy';
+        }
+    }
+
+    function editAcademy(id, name, code, address, phone, email, gst, status) {
+        document.getElementById('academy_id').value = id;
+        document.getElementById('name').value = name;
+        document.getElementById('code').value = code;
+        document.getElementById('address').value = address;
+        document.getElementById('phone').value = phone;
+        document.getElementById('email').value = email;
+        document.getElementById('gst_number').value = gst;
+        document.getElementById('status').value = status;
+        document.getElementById('modal-title').innerText = 'Edit Academy';
+        document.getElementById('academy-modal').classList.remove('hidden');
+    }
+</script>
+{% endblock %}
